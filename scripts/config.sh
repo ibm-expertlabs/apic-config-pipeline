@@ -15,7 +15,7 @@ fi
 
 # Make a configuration files directory
 cd ..
-mkdir config
+mkdir -p config
 cd config
 
 # Get the needed URLs for the automation
@@ -54,10 +54,29 @@ ADMIN_REALM="admin/default-idp-1"
 HTTP_CODE=`curl -s --write-out '%{http_code}' https://${APIC_ADMIN_URL}/client-downloads/toolkit-linux.tgz --insecure --output toolkit-linux.tgz`
 if [[ "${HTTP_CODE}" != "200" ]]
 then 
-  echo "[ERROR][config.sh] - An error occurred downloading the APIC toolkit to get the APIC CLI"
+  echo "[ERROR][config.sh] - An error occurred downloading the APIC toolkit to get the APIC CLI (HTTP Code: ${HTTP_CODE})"
   exit 1
 fi
+
+# Verify download
+if [[ ! -f "toolkit-linux.tgz" ]]; then 
+  echo "[ERROR][config.sh] - APIC toolkit download failed, file toolkit-linux.tgz not found"
+  exit 1
+fi
+
+# Extract the toolkit
 tar -zxvf toolkit-linux.tgz
+if [[ $? -ne 0 ]]; then 
+  echo "[ERROR][config.sh] - An error occurred extracting the APIC toolkit"
+  exit 1
+fi
+
+# Verify extraction
+if [[ ! -f "apic-slim" ]]; then 
+  echo "[ERROR][config.sh] - Extracted APIC CLI not found"
+  exit 1
+fi
+
 chmod +x apic-slim
 
 # Get the IBM APIC Connect Cloud Manager Admin password
@@ -70,11 +89,17 @@ echo "}" >> config.json
 
 # Login to IBM API Connect Cloud Manager through the APIC CLI
 ./apic-slim login --server ${APIC_ADMIN_URL} --username admin --password ''"${APIC_ADMIN_PASSWORD}"'' --realm ${ADMIN_REALM} --accept-license > /dev/null
-if [[ $? -ne 0 ]]; then echo "[ERROR][config.sh] - An error occurred logging into IBM API Connect using the APIC CLI"; exit 1; fi
+if [[ $? -ne 0 ]]; then 
+  echo "[ERROR][config.sh] - An error occurred logging into IBM API Connect using the APIC CLI"
+  exit 1
+fi
 
 # Get the toolkit credentials
 ./apic-slim cloud-settings:toolkit-credentials-list --server ${APIC_ADMIN_URL} --format json > toolkit-creds.json
-if [[ $? -ne 0 ]]; then echo "[ERROR][config.sh] - An error occurred getting the IBM API Connect Toolkit Credentials using the APIC CLI"; exit 1; fi
+if [[ $? -ne 0 ]]; then 
+  echo "[ERROR][config.sh] - An error occurred getting the IBM API Connect Toolkit Credentials using the APIC CLI"
+  exit 1
+fi
 
 # DEBUG information
 if [[ ! -z "${DEBUG}" ]]
