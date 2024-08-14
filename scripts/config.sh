@@ -21,7 +21,12 @@ cd config
 # Function to get the route host by a pattern
 get_route_host() {
   local route_pattern=$1
-  local route_host=$(oc get routes -n ${APIC_NAMESPACE} --no-headers | grep "${route_pattern}" | awk '{print $2}')
+  local exclude_pattern=$2
+  if [[ -n "$exclude_pattern" ]]; then
+    local route_host=$(oc get routes -n ${APIC_NAMESPACE} --no-headers | grep "${route_pattern}" | grep -v "${exclude_pattern}" | awk '{print $2}')
+  else
+    local route_host=$(oc get routes -n ${APIC_NAMESPACE} --no-headers | grep "${route_pattern}" | awk '{print $2}')
+  fi
   echo ${route_host}
 }
 
@@ -32,7 +37,7 @@ if [[ -z "${APIC_ADMIN_URL}" ]]; then echo "[ERROR][config.sh] - An error occurr
 APIC_API_MANAGER_URL=$(get_route_host "api-manager")
 if [[ -z "${APIC_API_MANAGER_URL}" ]]; then echo "[ERROR][config.sh] - An error occurred getting the IBM API Connect Management url"; exit 1; fi
 
-APIC_GATEWAY_URL=$(get_route_host "gateway" | grep -v "manager")
+APIC_GATEWAY_URL=$(get_route_host "gateway" "manager")
 if [[ -z "${APIC_GATEWAY_URL}" ]]; then echo "[ERROR][config.sh] - An error occurred getting the IBM API Connect Gateway url"; exit 1; fi
 
 APIC_GATEWAY_MANAGER_URL=$(get_route_host "gateway-manager")
