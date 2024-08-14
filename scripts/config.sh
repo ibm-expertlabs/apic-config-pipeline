@@ -18,22 +18,36 @@ cd ..
 mkdir -p config
 cd config
 
+# Function to get the route host by a pattern
+get_route_host() {
+  local route_pattern=$1
+  local route_host=$(oc get routes -n ${APIC_NAMESPACE} --no-headers | grep "${route_pattern}" | awk '{print $2}')
+  echo ${route_host}
+}
+
 # Get the needed URLs for the automation
-APIC_ADMIN_URL=$(oc get route apic-clust-22b82253-admin -n ${APIC_NAMESPACE} -o jsonpath='{.spec.host}')
+APIC_ADMIN_URL=$(get_route_host "admin")
 if [[ -z "${APIC_ADMIN_URL}" ]]; then echo "[ERROR][config.sh] - An error occurred getting the IBM API Connect Admin url"; exit 1; fi
-APIC_API_MANAGER_URL=$(oc get route apic-clust-22b82253-api-manager -n ${APIC_NAMESPACE} -o jsonpath='{.spec.host}')
+
+APIC_API_MANAGER_URL=$(get_route_host "api-manager")
 if [[ -z "${APIC_API_MANAGER_URL}" ]]; then echo "[ERROR][config.sh] - An error occurred getting the IBM API Connect Management url"; exit 1; fi
-APIC_GATEWAY_URL=$(oc get route apic-cluster-gw-gateway -n ${APIC_NAMESPACE} -o jsonpath='{.spec.host}')
+
+APIC_GATEWAY_URL=$(get_route_host "gateway" | grep -v "manager")
 if [[ -z "${APIC_GATEWAY_URL}" ]]; then echo "[ERROR][config.sh] - An error occurred getting the IBM API Connect Gateway url"; exit 1; fi
-APIC_GATEWAY_MANAGER_URL=$(oc get route apic-cluster-gw-gateway-manager -n ${APIC_NAMESPACE} -o jsonpath='{.spec.host}')
+
+APIC_GATEWAY_MANAGER_URL=$(get_route_host "gateway-manager")
 if [[ -z "${APIC_GATEWAY_MANAGER_URL}" ]]; then echo "[ERROR][config.sh] - An error occurred getting the IBM API Connect Gateway Manager url"; exit 1; fi
-APIC_ANALYTICS_CONSOLE_URL=$(oc get route apic-clust-fdec0b85-ai-endpoint -n ${APIC_NAMESPACE} -o jsonpath='{.spec.host}')
+
+APIC_ANALYTICS_CONSOLE_URL=$(get_route_host "ai-endpoint")
 if [[ -z "${APIC_ANALYTICS_CONSOLE_URL}" ]]; then echo "[ERROR][config.sh] - An error occurred getting the IBM API Connect Analytics Console url"; exit 1; fi
-APIC_PORTAL_DIRECTOR_URL=$(oc get route apic-clust-a65c3c0f-portal-director -n ${APIC_NAMESPACE} -o jsonpath='{.spec.host}')
+
+APIC_PORTAL_DIRECTOR_URL=$(get_route_host "portal-director")
 if [[ -z "${APIC_PORTAL_DIRECTOR_URL}" ]]; then echo "[ERROR][config.sh] - An error occurred getting the IBM API Connect Portal Director url"; exit 1; fi
-APIC_PORTAL_WEB_URL=$(oc get route apic-clust-a65c3c0f-portal-web -n ${APIC_NAMESPACE} -o jsonpath='{.spec.host}')
+
+APIC_PORTAL_WEB_URL=$(get_route_host "portal-web")
 if [[ -z "${APIC_PORTAL_WEB_URL}" ]]; then echo "[ERROR][config.sh] - An error occurred getting the IBM API Connect Portal Web url"; exit 1; fi
-APIC_PLATFORM_API_URL=$(oc get route apic-clust-22b82253-platform-api -n ${APIC_NAMESPACE} -o jsonpath='{.spec.host}')
+
+APIC_PLATFORM_API_URL=$(get_route_host "platform-api")
 if [[ -z "${APIC_PLATFORM_API_URL}" ]]; then echo "[ERROR][config.sh] - An error occurred getting the IBM API Connect Platform API url"; exit 1; fi
 
 # Storing the URLs in the JSON config file
